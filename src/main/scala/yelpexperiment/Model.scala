@@ -1,24 +1,23 @@
-package topicmodeling
+package yelpexperiment
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
+
+import org.apache.spark.SparkContext
 import org.apache.spark.ml.feature.{HashingTF, Tokenizer}
-import org.apache.spark.mllib.regression.{RidgeRegressionModel, LinearRegressionModel, LinearRegressionWithSGD, RidgeRegressionWithSGD, LabeledPoint}
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.mllib.regression._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
-import org.apache.spark.{SparkConf, SparkContext}
 
 /**
- * Created by laurencewelch on 4/5/15.
+ * Created by laurencewelch on 4/8/15.
  */
-object Main {
+class Model(@transient protected val sc: SparkContext,
+            @transient protected val sqlContext: SQLContext,
+            tokenizer: Tokenizer = new Tokenizer().setInputCol("text").setOutputCol("words"),
+            hashingTF: HashingTF = new HashingTF().setNumFeatures(1000).setInputCol("words").setOutputCol("features")) {
   val ridgeModelFileName = "ridgeModel.save"
   val linearModelFileName = "linearModel.save"
-
-  def splitData(data: RDD[LabeledPoint]): (RDD[LabeledPoint], RDD[LabeledPoint]) ={
-    var splits = data.randomSplit(Array(.7,.3))
-    (splits(0), splits(1))
-  }
 
   def testLinearRegressionSGD(trainingData: RDD[LabeledPoint] ,testingData: RDD[LabeledPoint]): (LinearRegressionModel, (Double,Double) ) ={
     var model = LinearRegressionWithSGD.train(trainingData, 12)
@@ -56,7 +55,7 @@ object Main {
     var data = reviews.rdd.map(row =>{
       LabeledPoint(row.getLong(1), row(3).asInstanceOf[Vector])
     })
-    val (trainingData, testingData) = splitData(data)
+    val (trainingData, testingData) = Util.splitData(data)
 
     val linearModel = testLinearRegressionSGD(trainingData,testingData)
     val ridgeModel = testRidgeRegressionSGD(trainingData, testingData)
@@ -67,7 +66,7 @@ object Main {
       println("LinearRegression MSE: " + linearModel._2._2)
       println("LinearRegression RMSE: " + linearModel._2._1)
     } catch {
-      case e: Exception => println("exception caught: " + e);
+      case e: Exception => println("exception caught: " + e)
     }
 
     try{
@@ -94,18 +93,10 @@ object Main {
   }
 
   def transformReviewDF(reviews: DataFrame): DataFrame ={
-    val tokenizer = new Tokenizer()
-      .setInputCol("text")
-      .setOutputCol("words")
-
-    val hashingTF = new HashingTF()
-      .setNumFeatures(1000)
-      .setInputCol(tokenizer.getOutputCol)
-      .setOutputCol("features")
     hashingTF.transform(tokenizer.transform(reviews))
   }
 
-  def train(sc: SparkContext, sqlContext: SQLContext): Unit ={
+  def trainUseful(sc: SparkContext, sqlContext: SQLContext): (LinearRegressionModel, RidgeRegressionModel) ={
     var reviews = sqlContext.sql("""
         SELECT text, votes.useful as label
         FROM review
@@ -114,32 +105,16 @@ object Main {
     generateUsefulModels(sc, reviews)
   }
 
-  def main(args: Array[String]) {
-    val sparkConf = new SparkConf()
-      .setAppName("YelpDataSetChallenge")
-      .setMaster("mesos://10.132.51.175:5050/mesos")
-      .set("spark.executor.uri", "https://s3.amazonaws.com/jimi-yelp/spark-1.3.0-bin-hadoop2.4.tgz")
-
-    val sc = new SparkContext(sparkConf)
-    val sqlContext = new SQLContext(sc)
-
-    val bf = sqlContext.jsonFile("hdfs://10.132.51.175/yelp/yelp_academic_dataset_business.json")
-    var rf = sqlContext.jsonFile("hdfs://10.132.51.175/yelp/yelp_academic_dataset_review.json")
-
-    bf.registerTempTable("business")
-    rf.registerTempTable("review")
-    var (linear,ridge) = null
-
+  def loadOrTrainModel(): (LinearRegressionModel,RidgeRegressionModel) ={
+    var (linear,ridge): (LinearRegressionModel,RidgeRegressionModel) = null
     if(!Files.exists(Paths.get(linearModelFileName))){
-      (linear, ridge) = train(sc, sqlContext)
+      var (linearM, ridgeM) = trainUseful(sc, sqlContext)
+      linear = linearM
+      ridge = ridgeM
     }else{
       linear = LinearRegressionModel.load(sc, linearModelFileName)
       ridge = RidgeRegressionModel.load(sc, ridgeModelFileName)
     }
-
-
-    sc.stop()
-
+    (linear,ridge)
   }
-
 }
