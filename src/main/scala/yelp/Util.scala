@@ -1,4 +1,4 @@
-package yelpexperiment
+package yelp
 
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD

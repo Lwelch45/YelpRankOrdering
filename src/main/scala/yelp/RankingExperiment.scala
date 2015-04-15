@@ -1,4 +1,4 @@
-package yelpexperiment
+package yelp
 
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.feature.{HashingTF, Tokenizer}

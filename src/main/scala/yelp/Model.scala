@@ -1,4 +1,4 @@
-package yelpexperiment
+package yelp
 
 import java.nio.file.{Files, Paths}
 
