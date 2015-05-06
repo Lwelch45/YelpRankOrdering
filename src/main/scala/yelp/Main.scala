@@ -16,18 +16,13 @@ object Main {
     val sc = new SparkContext(sparkConf)
     val sqlContext = new SQLContext(sc)
 
-    val hadoopConf=sc.hadoopConfiguration;
-    hadoopConf.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-    hadoopConf.set("fs.s3.awsAccessKeyId", "AKIAIPEMZJ3VZMJ3MRGA")
-    hadoopConf.set("fs.s3.awsSecretAccessKey", "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")
-
-    val bf = sqlContext.jsonFile("s3n://jimi-yelp/yelp_academic_dataset_business.json")
+    val bf = sqlContext.jsonFile("hdfs://10.132.25.121/tmp/business.json")
     bf.registerTempTable("business")
 
-    val rf = sqlContext.jsonFile("s3n://jimi-yelp/yelp_academic_dataset_review.json")
+    val rf = sqlContext.jsonFile("hdfs://10.132.25.121/tmp/review.json")
     rf.registerTempTable("review")
 
-    val reviewExperiment = new Review(sc,sqlContext,"", 5)
+    val reviewExperiment = new Review(sc, sqlContext, "", 5)
     reviewExperiment.train()
 
     sc.stop()
