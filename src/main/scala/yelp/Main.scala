@@ -11,7 +11,6 @@ object Main {
 
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("YelpDataSetChallenge")
-      .setMaster("mesos://10.132.51.175:5050/mesos")
       .set("spark.executor.uri", "https://s3.amazonaws.com/jimi-yelp/spark-1.3.0-bin-hadoop2.4.tgz")
 
     val sc = new SparkContext(sparkConf)
