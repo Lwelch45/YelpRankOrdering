@@ -80,17 +80,6 @@ class Model(@transient protected val sc: SparkContext,
     }
   }
 
-  def computeBusinessStats(businessFrame: DataFrame): Unit ={
-    //collect statistics on review counts
-    val bfRows = businessFrame.rdd
-    val rows = bfRows.map(row => {
-      (row.getLong(11))
-    })
-    val count = rows.count()
-    val mean = rows.sum / count
-    val devs = rows.map(score => (score - mean) * (score - mean))
-    val stddev = Math.sqrt(devs.sum / count)
-  }
 
   def transformReviewDF(reviews: DataFrame): DataFrame ={
     hashingTF.transform(tokenizer.transform(reviews))

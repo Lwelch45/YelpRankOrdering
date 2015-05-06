@@ -8,4 +8,5 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
 abstract class ClusteringExperiment extends Expirement {
   def listCentroids(): Array[Vector]
 
+  def train(): Unit
 }

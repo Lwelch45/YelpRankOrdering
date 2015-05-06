@@ -2,6 +2,7 @@ package yelp
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
+import yelp.expirement.review.Review
 
 /**
  * Created by laurencewelch on 4/5/15.
@@ -16,14 +17,14 @@ object Main {
     val sc = new SparkContext(sparkConf)
     val sqlContext = new SQLContext(sc)
 
-    val bf = sqlContext.jsonFile("hdfs://10.132.51.175/yelp/yelp_academic_dataset_business.json")
+    val bf = sqlContext.jsonFile("https://s3.amazonaws.com/jimi-yelp/yelp_academic_dataset_business.json")
     bf.registerTempTable("business")
 
-    val rf = sqlContext.jsonFile("hdfs://10.132.51.175/yelp/yelp_academic_dataset_review.json")
+    val rf = sqlContext.jsonFile("https://s3.amazonaws.com/jimi-yelp/yelp_academic_dataset_review.json")
     rf.registerTempTable("review")
 
-    val model = new Model(sc, sqlContext)
-    val models =  model.loadOrTrainModel()
+    val reviewExperiment = new Review(sc,sqlContext,"", 5)
+    reviewExperiment.train()
 
     sc.stop()
   }
