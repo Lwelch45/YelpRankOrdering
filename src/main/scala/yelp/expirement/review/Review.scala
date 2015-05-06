@@ -50,9 +50,10 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
 
 
   override def train(): Unit = {
-    trainUseful()
     trainTF()
     trainPLSA()
+    trainUseful()
+
   }
 
   def trainUseful(): Unit = {
