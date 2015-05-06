@@ -18,7 +18,7 @@ object Main {
     val sc = new SparkContext(sparkConf)
     val sqlContext = new SQLContext(sc)
 
-    val bf = sqlContext.jsonFile("s3n://jimi-yelp/yelp_academic_dataset_business.json")
+    val bf = sqlContext.jsonFile("s3n://AKIAIPEMZJ3VZMJ3MRGA:Y/oLyxBKk/e9/es+7B+rQexqEZNrciVFscnKDCSX@jimi-yelp/yelp_academic_dataset_business.json")
     bf.registerTempTable("business")
 
     val rf = sqlContext.jsonFile("https://s3.amazonaws.com/jimi-yelp/yelp_academic_dataset_review.json")
