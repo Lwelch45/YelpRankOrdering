@@ -11,6 +11,8 @@ object Main {
 
   def main(args: Array[String]) {
     val sparkConf = new SparkConf().setAppName("YelpDataSetChallenge")
+      .set("fs.s3n.awsAccessKeyId","AKIAIPEMZJ3VZMJ3MRGA")
+      .set("fs.s3n.awsSecretAccessKey","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")
       .set("spark.executor.uri", "https://s3.amazonaws.com/jimi-yelp/spark-1.3.0-bin-hadoop2.4.tgz")
 
     val sc = new SparkContext(sparkConf)
