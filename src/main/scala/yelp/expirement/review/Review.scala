@@ -28,10 +28,6 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
              protected val businessID: String, protected val K: Int)
   extends RankingExperiment{
 
-  private val ridgeModelFileName = "ridgeModel.save"
-  private val TFModelFileName = businessID + "_TFModel.save" //business specific
-  private val LDAModelFileName = businessID + "_LDAModel.save" //business specific
-
   var usefulModel: RidgeRegressionModel = null
   var TFClusterModel: KMeansModel = null
   var LDAClusterModel: DistributedLDAModel = null
@@ -60,10 +56,7 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
   }
 
   def trainUseful(): Unit = {
-    if(!Files.exists(Paths.get(ridgeModelFileName))){
-      usefulModel = RidgeRegressionModel.load(sc, ridgeModelFileName)
-      return
-    }
+
     var reviews = sqlContext.sql("""
         SELECT text, votes.useful as label
         FROM review
@@ -89,7 +82,6 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
 
 
     try{
-      usefulModel.save(sc, ridgeModelFileName)
       println("RidgeRegression MSE: " + mse)
       println("RidgeRegression RMSE: " + rmse)
     } catch {
