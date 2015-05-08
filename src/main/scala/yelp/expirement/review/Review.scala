@@ -32,6 +32,7 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
   var TFClusterModel: KMeansModel = null
   var LDAClusterModel: DistributedLDAModel = null
 
+
   var TFClusterError: Double = 0.0
 
   val businessReviews = Util.vectorize(sqlContext.sql(s"""
@@ -48,6 +49,20 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
 
   override def perform(): Unit = {}
 
+  def observe(): String = {
+    val reviews = Util.vectorize(sqlContext.sql(s"""
+        SELECT r.text
+        FROM review r
+        WHERE r.business_id = '$businessID'
+      """)).rdd.map(row => (row(0).asInstanceOf[String], row(2).asInstanceOf[Vector])).cache()
+    val usefulPredictions = usefulModel.predict(reviews.map(row => row._2))
+
+    reviews.zip(usefulPredictions)
+    reviews.zipWithIndex()
+
+    reviews.zip(TFClusterModel.predict(reviews.map(row => row._2)))
+    ""
+  }
 
   override def train(): Unit = {
     trainTF()
@@ -63,9 +78,7 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
         FROM review
                                  """)
     reviews = Util.vectorize(reviews)
-    var data = reviews.rdd.map(row =>{
-      LabeledPoint(row.getLong(1), row(3).asInstanceOf[Vector])
-    })
+    val data = reviews.rdd.map(row =>LabeledPoint(row.getLong(1), row(3).asInstanceOf[Vector]))
     val (trainingData, testingData) = Util.splitData(data)
 
     usefulModel = RidgeRegressionWithSGD.train(trainingData, 12)
@@ -106,6 +119,5 @@ class Review(@transient protected val sc: SparkContext, @transient protected val
     // Set LDA parameters
     val lda = new LDA().setK(numberOfTopics).setMaxIterations(numberOfIterations)
     LDAClusterModel = lda.run(processedReviews)
-
   }
 }
